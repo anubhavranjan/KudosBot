@@ -1,115 +1,103 @@
 {
-    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
-    "manifestVersion": "1.16",
-    "version": "1.0.0",
-    "id": "${{TEAMS_APP_ID}}",
-    "packageName": "com.microsoft.teams.extension",
-    "developer": {
-        "name": "Teams App, Inc.",
-        "websiteUrl": "https://www.example.com",
-        "privacyUrl": "https://www.example.com/termofuse",
-        "termsOfUseUrl": "https://www.example.com/privacy"
-    },
-    "icons": {
-        "color": "color.png",
-        "outline": "outline.png"
-    },
-    "name": {
-        "short": "Kudos-Bot-${{TEAMSFX_ENV}}",
-        "full": "full name for Kudos-Bot"
-    },
-    "description": {
-        "short": "short description of Kudos-Bot",
-        "full": "full description of Kudos-Bot"
-    },
-    "accentColor": "#FFFFFF",
-    "bots": [],
-    "composeExtensions": [
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "${{TEAMS_APP_ID}}",
+  "packageName": "com.microsoft.teams.extension",
+  "developer": {
+    "name": "Teams App, Inc.",
+    "websiteUrl": "https://www.example.com",
+    "privacyUrl": "https://www.example.com/termofuse",
+    "termsOfUseUrl": "https://www.example.com/privacy"
+  },
+  "icons": {
+    "color": "color.png",
+    "outline": "outline.png"
+  },
+  "name": {
+    "short": "Kudos-Bot-${{TEAMSFX_ENV}}",
+    "full": "full name for Kudos-Bot"
+  },
+  "description": {
+    "short": "short description of Kudos-Bot",
+    "full": "full description of Kudos-Bot"
+  },
+  "accentColor": "#FFFFFF",
+  "bots": [],
+  "composeExtensions": [
+    {
+      "botId": "${{BOT_ID}}",
+      "commands": [
         {
-            "botId": "${{BOT_ID}}",
-            "commands": [
+          "id": "createKudos",
+          "context": ["compose", "message"],
+          "description": "Command to run action to create a Card from Compose Box",
+          "title": "Give Kudos!",
+          "type": "action",
+          "parameters": [
+            {
+              "inputType": "text",
+              "name": "kudosTo",
+              "title": "Who do you want to give Kudos to",
+              "description": "Email address of the person you want to give Kudos to"
+            },
+            {
+              "inputType": "toggle",
+              "title": "Hide from Feed?",
+              "description": "Would you like to Hide this from Feed?",
+              "name": "hideFromFeed"
+            },
+            {
+              "inputType": "text",
+              "title": "Notify Others?",
+              "name": "notifyOthers",
+              "description": "Enter the Email Address of others who you want to Notify"
+            },
+            {
+              "inputType": "choiceset",
+              "choices": [
                 {
-                    "id": "createCard",
-                    "context": [
-                        "compose"
-                    ],
-                    "description": "Command to run action to create a Card from Compose Box",
-                    "title": "Create Card",
-                    "type": "action",
-                    "parameters": [
-                        {
-                            "name": "title",
-                            "title": "Card title",
-                            "description": "Title for the card",
-                            "inputType": "text"
-                        },
-                        {
-                            "name": "subTitle",
-                            "title": "Subtitle",
-                            "description": "Subtitle for the card",
-                            "inputType": "text"
-                        },
-                        {
-                            "name": "text",
-                            "title": "Text",
-                            "description": "Text for the card",
-                            "inputType": "textarea"
-                        }
-                    ]
+                  "title": "Wow Our Customers",
+                  "value": "1"
                 },
                 {
-                    "id": "shareMessage",
-                    "context": [
-                        "message"
-                    ],
-                    "description": "Test command to run action on message context (message sharing)",
-                    "title": "Share Message",
-                    "type": "action",
-                    "parameters": [
-                        {
-                            "name": "includeImage",
-                            "title": "Include Image",
-                            "description": "Include image in Hero Card",
-                            "inputType": "toggle"
-                        }
-                    ]
+                  "title": "Win as a Team",
+                  "value": "2"
                 },
                 {
-                    "id": "searchQuery",
-                    "context": [
-                        "compose",
-                        "commandBox"
-                    ],
-                    "description": "Test command to run query",
-                    "title": "Search",
-                    "type": "query",
-                    "parameters": [
-                        {
-                            "name": "searchQuery",
-                            "title": "Search Query",
-                            "description": "Your search query",
-                            "inputType": "text"
-                        }
-                    ]
-                }
-            ],
-            "messageHandlers": [
+                  "title": "Create Belonging",
+                  "value": "3"
+                },
                 {
-                    "type": "link",
-                    "value": {
-                        "domains": [
-                            "*.botframework.com"
-                        ]
-                    }
+                  "title": "Stay Hungry And Humble",
+                  "value": "4"
                 }
-            ]
+              ],
+              "name": "kudos",
+              "title": "Select your Kudos",
+              "description": "Select your Kudos"
+            },
+            {
+              "inputType": "textarea",
+              "title": "Kudos Message",
+              "name": "kudosMessage",
+              "description": "Enter your Kudos Message"
+            }
+          ]
         }
-    ],
-    "configurableTabs": [],
-    "staticTabs": [],
-    "permissions": [
-        "identity",
-        "messageTeamMembers"
-    ],
-    "validDomains": []
+      ],
+      "messageHandlers": [
+        {
+          "type": "link",
+          "value": {
+            "domains": ["*.botframework.com"]
+          }
+        }
+      ]
+    }
+  ],
+  "configurableTabs": [],
+  "staticTabs": [],
+  "permissions": ["identity", "messageTeamMembers"],
+  "validDomains": []
 }

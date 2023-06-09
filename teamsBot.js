@@ -1,157 +1,133 @@
 const axios = require("axios");
 const querystring = require("querystring");
-const { TeamsActivityHandler, CardFactory } = require("botbuilder");
+const { TeamsActivityHandler, CardFactory, TeamsInfo } = require("botbuilder");
 
+const kudos = [
+  {
+    "title": "Wow Our Customers",
+    "value": "1"
+  },
+  {
+    "title": "Win as a Team",
+    "value": "2"
+  },
+  {
+    "title": "Create Belonging",
+    "value": "3"
+  },
+  {
+    "title": "Stay Hungry And Humble",
+    "value": "4"
+  }
+];
 class TeamsBot extends TeamsActivityHandler {
+  constructor() {
+    super();
+  }
   // Action.
-  handleTeamsMessagingExtensionSubmitAction(context, action) {
+  async handleTeamsMessagingExtensionSubmitAction(context, action) {
     switch (action.commandId) {
-      case "createCard":
-        return createCardCommand(context, action);
-      case "shareMessage":
-        return shareMessageCommand(context, action);
+      case "createKudos":
+        return createKudosCardCommand(context, action);
       default:
         throw new Error("NotImplemented");
     }
   }
 
-  // Search.
-  async handleTeamsMessagingExtensionQuery(context, query) {
-    const searchQuery = query.parameters[0].value;
-    const response = await axios.get(
-      `http://registry.npmjs.com/-/v1/search?${querystring.stringify({
-        text: searchQuery,
-        size: 8,
-      })}`
-    );
-
-    const attachments = [];
-    response.data.objects.forEach((obj) => {
-      const heroCard = CardFactory.heroCard(obj.package.name);
-      const preview = CardFactory.heroCard(obj.package.name);
-      preview.content.tap = {
-        type: "invoke",
-        value: { name: obj.package.name, description: obj.package.description },
-      };
-      const attachment = { ...heroCard, preview };
-      attachments.push(attachment);
-    });
-
-    return {
-      composeExtension: {
-        type: "result",
-        attachmentLayout: "list",
-        attachments: attachments,
-      },
-    };
+  async getSingleMember(context) {
+    try {
+      const member = await TeamsInfo.getMember(
+        context,
+        context.activity.from.id
+      );
+      return member.name;
+    } catch (e) {
+      if (e.code === 'MemberNotFoundInConversation') {
+        context.sendActivity(MessageFactory.text('Member not found.'));
+        return e.code;
+      }
+      throw e;
+    }
   }
 
-  async handleTeamsMessagingExtensionSelectItem(context, obj) {
-    return {
-      composeExtension: {
-        type: "result",
-        attachmentLayout: "list",
-        attachments: [CardFactory.heroCard(obj.name, obj.description)],
-      },
-    };
-  }
-
-  // Link Unfurling.
-  handleTeamsAppBasedLinkQuery(context, query) {
-    const attachment = CardFactory.thumbnailCard("Thumbnail Card", query.url, [query.url]);
-
-    // By default the link unfurling result is cached in Teams for 30 minutes.
-    // The code has set a cache policy and removed the cache for the app. Learn more here: https://learn.microsoft.com/microsoftteams/platform/messaging-extensions/how-to/link-unfurling?tabs=dotnet%2Cadvantages#remove-link-unfurling-cache
-    const result = {
-      attachmentLayout: "list",
-      type: "result",
-      attachments: [attachment],
-      suggestedActions: {
-        actions: [
-          {
-            type: "setCachePolicy",
-            value: '{"type":"no-cache"}',
-          },
-        ],
-      },
-    };
-    const response = {
-      composeExtension: result,
-    };
-    return response;
-  }
 }
 
-function createCardCommand(context, action) {
+async function createKudosCardCommand(context, action) {
   // The user has chosen to create a card by choosing the 'Create Card' context menu command.
-  const data = action.data;
-  const heroCard = CardFactory.heroCard(data.title, data.text);
-  heroCard.content.subtitle = data.subTitle;
-  const attachment = {
-    contentType: heroCard.contentType,
-    content: heroCard.content,
-    preview: heroCard,
-  };
 
-  return {
-    composeExtension: {
-      type: "result",
-      attachmentLayout: "list",
-      attachments: [attachment],
-    },
-  };
-}
+  try {
+    let from = context.activity?.from;
+    let fromText = "";
+    if (from?.name) {
+      fromText = from.name + " gave Kudos";
+    }
+    const data = action.data;
+    let selectedKudos = kudos.find((k) => k.value === data.kudos);
+    const adaptiveCard = CardFactory.adaptiveCard({
+      $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+      type: "AdaptiveCard",
+      version: "1.4",
+      body: [
+        {
+          type: "TextBlock",
+          text: "Kudos",
+          size: "large",
+          weight: "bolder",
+        },
+        {
+          type: "TextBlock",
+          text: selectedKudos.title,
+          size: "medium",
+          weight: "bolder",
+        },
+        {
+          type: "TextBlock",
+          text: fromText,
+          size: "medium",
+        },
+        {
+          type: "TextBlock",
+          text: data.kudosMessage,
+        },
+      ],
+    });
+    const attachment = {
+      contentType: adaptiveCard.contentType,
+      content: adaptiveCard.content,
+      preview: adaptiveCard,
+    };
 
-function shareMessageCommand(context, action) {
-  // The user has chosen to share a message by choosing the 'Share Message' context menu command.
-  let userName = "unknown";
-  if (
-    action.messagePayload &&
-    action.messagePayload.from &&
-    action.messagePayload.from.user &&
-    action.messagePayload.from.user.displayName
-  ) {
-    userName = action.messagePayload.from.user.displayName;
+    let kudosObj = {};
+    kudosObj.kudosMessage = data.kudosMessage;
+    kudosObj.to = data.kudosTo;
+    kudosObj.notifyOthers = data.notifyOthers;
+    kudosObj.selectedKudos = data.kudos;
+    kudosObj.hideFromFeed = data.hideFromFeed;
+    kudosObj.from = data.from;
+    fetch('https://dev27023.service-now.com/api/436728/kudos_teams_integration/staging', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(kudosObj)
+    }).then(response => {
+      console.log(response);
+    }).catch(error => {
+      console.log(error);
+
+    });
+    console.log(kudosObj);
+
+    return {
+      composeExtension: {
+        type: "result",
+        attachmentLayout: "list",
+        attachments: [attachment],
+      },
+    };
+  } catch (error) {
+    console.log(error);
   }
-
-  // This Message Extension example allows the user to check a box to include an image with the
-  // shared message.  This demonstrates sending custom parameters along with the message payload.
-  let images = [];
-  const includeImage = action.data.includeImage;
-  if (includeImage === "true") {
-    images = [
-      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQtB3AwMUeNoq4gUBGe6Ocj8kyh3bXa9ZbV7u1fVKQoyKFHdkqU",
-    ];
-  }
-  const heroCard = CardFactory.heroCard(
-    `${userName} originally sent this message:`,
-    action.messagePayload.body.content,
-    images
-  );
-
-  if (
-    action.messagePayload &&
-    action.messagePayload.attachments &&
-    action.messagePayload.attachments.length > 0
-  ) {
-    // This sample does not add the MessagePayload Attachments.  This is left as an
-    // exercise for the user.
-    heroCard.content.subtitle = `(${action.messagePayload.attachments.length} Attachments not included)`;
-  }
-
-  const attachment = {
-    contentType: heroCard.contentType,
-    content: heroCard.content,
-    preview: heroCard,
-  };
-
-  return {
-    composeExtension: {
-      type: "result",
-      attachmentLayout: "list",
-      attachments: [attachment],
-    },
-  };
 }
 
 module.exports.TeamsBot = TeamsBot;
